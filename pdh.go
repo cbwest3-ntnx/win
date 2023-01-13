@@ -124,6 +124,30 @@ type (
 	PDH_HCOUNTER HANDLE // counter handle
 )
 
+type PDH_COUNTER_INFO struct {
+	dwLength        uint32
+	dwType          uint32
+	CVersion        uint32
+	CStatus         uint32
+	lScale          int32
+	lDefaultScale   int32
+	dwUserData      *uint32
+	dwQueryUserData *uint32
+	szFullPath      *uint16 // pointer to a string
+	CounterPath     *PDH_COUNTER_PATH_ELEMENTS
+	szExplainText   *uint16 // pointer to a string
+	DataBuffer      *string
+}
+
+type PDH_COUNTER_PATH_ELEMENTS struct {
+	szMachineName    *uint16 // pointer to a string
+	szObjectName     *uint16 // pointer to a string
+	szInstanceName   *uint16 // pointer to a string
+	szParentInstance *uint16 // pointer to a string
+	dwInstanceIndex  *uint32
+	szCounterName    *uint16 // pointer to a string
+}
+
 // Union specialization for double values
 type PDH_FMT_COUNTERVALUE_DOUBLE struct {
 	CStatus     uint32
@@ -170,6 +194,7 @@ var (
 	pdh_AddEnglishCounterW        *windows.LazyProc
 	pdh_CloseQuery                *windows.LazyProc
 	pdh_CollectQueryData          *windows.LazyProc
+	pdh_GetCounterInfo            *windows.LazyProc
 	pdh_GetFormattedCounterValue  *windows.LazyProc
 	pdh_GetFormattedCounterArrayW *windows.LazyProc
 	pdh_OpenQuery                 *windows.LazyProc
@@ -185,6 +210,7 @@ func init() {
 	pdh_AddEnglishCounterW = libpdhDll.NewProc("PdhAddEnglishCounterW")
 	pdh_CloseQuery = libpdhDll.NewProc("PdhCloseQuery")
 	pdh_CollectQueryData = libpdhDll.NewProc("PdhCollectQueryData")
+	pdh_GetCounterInfo = libpdhDll.NewProc("PdhGetCounterInfoW")
 	pdh_GetFormattedCounterValue = libpdhDll.NewProc("PdhGetFormattedCounterValue")
 	pdh_GetFormattedCounterArrayW = libpdhDll.NewProc("PdhGetFormattedCounterArrayW")
 	pdh_OpenQuery = libpdhDll.NewProc("PdhOpenQuery")
@@ -288,6 +314,17 @@ func PdhCloseQuery(hQuery PDH_HQUERY) uint32 {
 // displaying the correct data for the processor idle time. The second call will have a 0 return code.
 func PdhCollectQueryData(hQuery PDH_HQUERY) uint32 {
 	ret, _, _ := pdh_CollectQueryData.Call(uintptr(hQuery))
+
+	return uint32(ret)
+}
+
+// Retrieves information about a counter, such as data size, counter type, path, and user-supplied data values.
+func PdhGetCounterInfo(hCounter PDH_HCOUNTER, bRetrieveExplainText uintptr, pdwBufferSize *uint32, lpBuffer *PDH_COUNTER_INFO) uint32 {
+	ret, _, _ := pdh_GetCounterInfo.Call(
+		uintptr(hCounter),
+		bRetrieveExplainText,
+		uintptr(unsafe.Pointer(pdwBufferSize)),
+		uintptr(unsafe.Pointer(lpBuffer)))
 
 	return uint32(ret)
 }
