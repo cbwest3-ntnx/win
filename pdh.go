@@ -209,6 +209,7 @@ const (
 )
 
 type (
+	PDH_HLOG     HANDLE // data source handle
 	PDH_HQUERY   HANDLE // query handle
 	PDH_HCOUNTER HANDLE // counter handle
 )
@@ -283,6 +284,7 @@ var (
 	pdh_AddEnglishCounterW        *windows.LazyProc
 	pdh_CloseQuery                *windows.LazyProc
 	pdh_CollectQueryData          *windows.LazyProc
+	pdh_ExpandWildCardPath        *windows.LazyProc
 	pdh_GetCounterInfo            *windows.LazyProc
 	pdh_GetFormattedCounterValue  *windows.LazyProc
 	pdh_GetFormattedCounterArrayW *windows.LazyProc
@@ -299,6 +301,7 @@ func init() {
 	pdh_AddEnglishCounterW = libpdhDll.NewProc("PdhAddEnglishCounterW")
 	pdh_CloseQuery = libpdhDll.NewProc("PdhCloseQuery")
 	pdh_CollectQueryData = libpdhDll.NewProc("PdhCollectQueryData")
+	pdh_ExpandWildCardPath = libpdhDll.NewProc("PdhExpandWildCardPathHW")
 	pdh_GetCounterInfo = libpdhDll.NewProc("PdhGetCounterInfoW")
 	pdh_GetFormattedCounterValue = libpdhDll.NewProc("PdhGetFormattedCounterValue")
 	pdh_GetFormattedCounterArrayW = libpdhDll.NewProc("PdhGetFormattedCounterArrayW")
@@ -403,6 +406,19 @@ func PdhCloseQuery(hQuery PDH_HQUERY) uint32 {
 // displaying the correct data for the processor idle time. The second call will have a 0 return code.
 func PdhCollectQueryData(hQuery PDH_HQUERY) uint32 {
 	ret, _, _ := pdh_CollectQueryData.Call(uintptr(hQuery))
+
+	return uint32(ret)
+}
+
+// Examines the specified computer or log file and returns those counter paths that match the givencounter path which contains wildcard characters.
+func PdhExpandWildCardPath(hDataSource PDH_HLOG, szWildCardPath string, mszExpandedPathList *uint32, pcchPathListLength *PDH_COUNTER_INFO, dwFlags *uint32) uint32 {
+	ptxt, _ := syscall.UTF16PtrFromString(szWildCardPath)
+	ret, _, _ := pdh_ExpandWildCardPath.Call(
+		uintptr(hDataSource),
+		uintptr(unsafe.Pointer(ptxt)),
+		uintptr(unsafe.Pointer(mszExpandedPathList)),
+		uintptr(unsafe.Pointer(pcchPathListLength)),
+		uintptr(unsafe.Pointer(dwFlags)))
 
 	return uint32(ret)
 }
