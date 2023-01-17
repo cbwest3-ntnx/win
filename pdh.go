@@ -224,7 +224,7 @@ type PDH_COUNTER_INFO struct {
 	dwUserData      *uint32
 	dwQueryUserData *uint32
 	szFullPath      *uint16 // pointer to a string
-	CounterPath     *PDH_COUNTER_PATH_ELEMENTS
+	CounterPath     PDH_COUNTER_PATH_ELEMENTS
 	szExplainText   *uint16 // pointer to a string
 	DataBuffer      *string
 }
